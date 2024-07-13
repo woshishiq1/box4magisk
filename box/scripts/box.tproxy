@@ -471,6 +471,11 @@ tun_forward_ip_rules_del() {
   ip rule del pref 6000
 }
 
+sing_tun_ip_rules() {
+  ip rule $1 from all iif ${tun_device} lookup main suppress_prefixlength 0 pref 8000
+  ip rule $1 lookup main pref 7000
+}
+
 tun_forward_iptables_rules() {
   # iptables $1 FORWARD -s 10.0.0.0/8 -o ${tun_device} -j ACCEPT
   # iptables $1 FORWARD -s 172.16.0.0/12 -o ${tun_device} -j ACCEPT
@@ -496,12 +501,13 @@ tun_forward_enable() {
   ## mount -o bind /dev/ip_forward_stub /proc/sys/net/ipv4/ip_forward
 
   # create_tun_link
-  ## probe_tun_index && tun_forward_ip_rules "add"
-  probe_tun_device && tun_forward_iptables_rules "-I" && log Info "tun hotspot support is enabled."
+  probe_tun_index && tun_forward_ip_rules "add"
+  probe_tun_device && tun_forward_iptables_rules "-I" && sing_tun_ip_rules "add" && log Info "tun hotspot support is enabled."
 }
 
 tun_forward_disable() {
   # tun_forward_ip_rules "del" >> /dev/null 2>&1
+  sing_tun_ip_rules "del" >> /dev/null 2>&1
   tun_forward_ip_rules_del >> /dev/null 2>&1
   tun_forward_iptables_rules "-D" >> /dev/null 2>&1
   log Warn "tun hotspot support is disabled."
